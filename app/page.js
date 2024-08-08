@@ -1,95 +1,297 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+
+import { useState } from 'react';
+import { Box, Stack, TextField, Button, Typography, Paper, AppBar, Toolbar, IconButton } from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Home() {
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      content: "Hi, I'm the PharmaAI Support Agent. How can I assist you today?"
+    }
+  ]);
+  const [message, setMessage] = useState('');
+  const [chatOpen, setChatOpen] = useState(true); // Set to true to show chat by default
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState('');
+  const [feedbackComments, setFeedbackComments] = useState('');
+
+  const sendMessage = async () => {
+    if (message.trim() === '') return;
+    setMessage('');
+    setMessages((messages) => [
+      ...messages,
+      { role: 'user', content: message },
+      { role: 'assistant', content: '' }
+    ]);
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify([...messages, { role: 'user', content: message }])
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    let result = '';
+    reader.read().then(function processText({ done, value }) {
+      if (done) {
+        return result;
+      }
+      const text = decoder.decode(value || new Int8Array(), { stream: true });
+      setMessages((messages) => {
+        let lastMessage = messages[messages.length - 1];
+        let otherMessages = messages.slice(0, messages.length - 1);
+        return [
+          ...otherMessages,
+          {
+            ...lastMessage,
+            content: lastMessage.content + text,
+          }
+        ];
+      });
+      return reader.read().then(processText);
+    });
+  };
+
+  const restartChat = () => {
+    setMessages([
+      {
+        role: 'assistant',
+        content: "Hi, I'm the PharmaAI Support Agent. How can I assist you today?"
+      }
+    ]);
+    setMessage('');
+  };
+
+  const submitFeedback = async () => {
+    setFeedbackRating('');
+    setFeedbackComments('');
+    setFeedbackOpen(false);
+    toast.success('Thank you for your feedback!');
+  };
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <Box
+      width="100vw"
+      height="100vh"
+      display="flex"
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
+      bgcolor="#f5f5f5"
+    >
+      {chatOpen && (
+        <Stack
+          direction="column"
+          width="600px"
+          height="700px"
+          component={Paper}
+          elevation={3}
+          borderRadius={4}
+          position="relative"
+        >
+          <AppBar position="static" sx={{ bgcolor: '#6a1b9a', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}>
+            <Toolbar>
+              <img src="/images/bot.png" alt="Bot Icon" style={{ width: 40, height: 40, marginRight: 8 }} />
+              <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+                PharmaAI
+              </Typography>
+              <IconButton color="inherit" onClick={restartChat}>
+                <RestartAltIcon />
+              </IconButton>
+            </Toolbar>
+          </AppBar>
+
+          <Stack
+            direction="column"
+            flexGrow={1}
+            overflow="auto"
+            p={2}
+            spacing={2}
           >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
+            {messages.map((message, index) => (
+              <Box
+                key={index}
+                display="flex"
+                alignItems="center"
+                justifyContent={
+                  message.role === 'assistant' ? 'flex-start' : 'flex-end'
+                }
+              >
+                {message.role === 'assistant' && (
+                  <img src="/images/bot.png" alt="Bot Icon" style={{ width: 30, height: 30, marginRight: 8 }} />
+                )}
+                <Box
+                  bgcolor={
+                    message.role === 'assistant' ? '#e0e0e0' : '#6a1b9a'
+                  }
+                  color={message.role === 'assistant' ? 'black' : 'white'}
+                  borderRadius={16}
+                  p={2}
+                  maxWidth="80%"
+                  boxShadow={3}
+                >
+                  <Typography variant="body1" whiteSpace="pre-wrap">
+                    {message.content}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Stack>
+
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            p={2}
+            borderTop="1px solid #e0e0e0"
+          >
+            <TextField
+              label="Type your message..."
+              fullWidth
+              variant="outlined"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') sendMessage(); }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: '#6a1b9a',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#6a1b9a',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#6a1b9a',
+                  },
+                },
+              }}
             />
-          </a>
-        </div>
-      </div>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={sendMessage}
+              endIcon={<SendIcon />}
+              sx={{
+                bgcolor: 'transparent',
+                borderRadius: '5%',
+                borderColor: '#6a1b9a',
+                color: '#6a1b9a',
+                '&:hover': {
+                  bgcolor: '#6a1b9a',
+                  color: 'white',
+                  borderColor: '#6a1b9a',
+                },
+              }}
+            >
+              Send
+            </Button>
+          </Stack>
+        </Stack>
+      )}
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
+      {!chatOpen && (
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setChatOpen(true)}
         >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+          Open Chat
+        </Button>
+      )}
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+      <Box
+        position="fixed"
+        bottom={16}
+        right={16}
+        bgcolor="#6a1b9a"
+        borderRadius={4}
+        p={2}
+        color="white"
+        onClick={() => setFeedbackOpen(true)}
+        sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+      >
+        <Typography variant="button">Give Feedback</Typography>
+      </Box>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
+      {feedbackOpen && (
+        <Box
+          position="fixed"
+          bottom={16}
+          right={16}
+          bgcolor="#ffffff"
+          borderRadius={4}
+          p={2}
+          boxShadow={3}
+          width="300px"
         >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
+          <Typography variant="h6" mb={2}>Feedback</Typography>
+          <Stack direction="row" spacing={2} mb={2}>
+            <Button
+              variant={feedbackRating === 'Good' ? 'contained' : 'outlined'}
+              color="success"
+              onClick={() => setFeedbackRating('Good')}
+              sx={{ width: '100px' }}
+            >
+              Good
+            </Button>
+            <Button
+              variant={feedbackRating === 'Bad' ? 'contained' : 'outlined'}
+              color="error"
+              onClick={() => setFeedbackRating('Bad')}
+              sx={{ width: '100px' }}
+            >
+              Bad
+            </Button>
+            <Button
+              variant={feedbackRating === 'Not Sure' ? 'contained' : 'outlined'}
+              color="info"
+              onClick={() => setFeedbackRating('Not Sure')}
+              sx={{ width: '100px' }}
+            >
+              Not Sure
+            </Button>
+          </Stack>
+          <TextField
+            label="Comments"
+            multiline
+            rows={4}
+            value={feedbackComments}
+            onChange={(e) => setFeedbackComments(e.target.value)}
+            sx={{
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: '#6a1b9a',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#6a1b9a',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#6a1b9a',
+                },
+              },
+            }}
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={submitFeedback}
+            fullWidth
+          >
+            Submit
+          </Button>
+        </Box>
+      )}
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      <ToastContainer />
+    </Box>
   );
 }
