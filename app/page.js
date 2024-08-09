@@ -30,7 +30,7 @@ export default function Home() {
     try {
         console.log("Sending message:", message);
         
-        const response = await fetch('/api/ai-response', {
+        const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
