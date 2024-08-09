@@ -30,13 +30,14 @@ export default function Home() {
     try {
         console.log("Sending message:", message);
         
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ query: message })
-        });
+        const response = await fetch('http://localhost:5000/api/chat', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ query: message })
+      });
+      
 
         console.log("Response status:", response.status);
 
@@ -52,6 +53,7 @@ export default function Home() {
             { role: 'assistant', content: data.response }
         ]);
     } catch (error) {
+
         console.error('Error occurred:', error.message);
         setMessages((messages) => [
             ...messages,

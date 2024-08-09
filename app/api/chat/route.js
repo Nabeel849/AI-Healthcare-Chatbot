@@ -12,38 +12,50 @@ const systemPrompt = `You are an AI-powered customer support assistant for Pharm
 
 Your goal is to provide accurate information, assist with common inquiries, and ensure a positive experience for all PharmaAI users.`;
 
-export async function POST(req){
-    const openai = new OpenAI()
-    const data = await req.json()
+export async function POST(req) {
+    const data = await req.json();
 
-    const completion = await openai.chat.completions.create({
-        messages: [
-            {
-                role: 'system', content: systemPrompt,
+    const queryGemini = async (text) => {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
             },
-            { role: 'user', content: data.query }
-        ],
-        model: 'gpt-4o-mini',
-        stream: true,
-    })
-
-    const stream = new ReadableStream({
-        async start(controller) {
-            const encoder = new TextEncoder()
-            try {
-                for await (const chunk of completion) {
-                    const content = chunk.choices[0]?.delta?.content
-                    if (content) {
-                        const text = encoder.encode(content)
-                        controller.enqueue(text)
+            body: JSON.stringify({
+                contents: [
+                    {
+                        parts: [{ text: text }]
                     }
-                }
-            } catch (err) {
-                controller.error(err)
-            } finally {
-                controller.close()
-            }
-        },
-    })
-    return new NextResponse(stream)
+                ]
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch data from Gemini API');
+        }
+
+        const result = await response.json();
+        return result.contents[0].parts[0].text;
+    };
+    userAA = null
+    try {
+        const systemPrompt = "You are a doctor, and you have to give advice to the user based on the following message.";
+        const userQuery = data.query;
+
+        const prompt = `${systemPrompt} User query: ${userQuery}`;
+        const geminiResponse = await queryGemini(prompt);
+        if (!userQuery){
+            throw new Error("there is no such query", userQuery)
+        }
+        return new Response(JSON.stringify({ response: geminiResponse }), {
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+    } catch (error) {
+        console.error('Error occurred:', error.message);
+        return new Response(JSON.stringify({ response: 'Sorry, something went wrong. Please try again later. hehe' }), {
+            headers: { 'Content-Type': 'application/json' },
+            status: 500,
+        });
+    }
 }
