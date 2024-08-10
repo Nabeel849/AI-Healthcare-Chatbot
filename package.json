@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+  "dev": "concurrently \"next dev\" \"cd app/api/chat && python app.py\"",
+  "build": "next build",
+  "start": "concurrently \"next start\" \"cd app/api/chat && python app.py\"",
+  "lint": "next lint"
   },
+
   "dependencies": {
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
