@@ -1,16 +1,6 @@
-import {NextResponse} from 'next/server'
+import { NextResponse } from 'next/server';
 
-const systemPrompt = `You are an AI-powered customer support assistant for PharmaAI, a platform that provides AI-powered disease information, symptoms, and treatments to patients.
-
-1. PharmaAI offers AI-powered insights for various diseases and health conditions.
-2. Our platform helps patients understand their symptoms and find appropriate treatments.
-3. We cover a wide range of medical topics including disease information, symptoms, treatment options, and preventative care.
-4. Users can access our services through our website or mobile app.
-5. If asked about technical issues, guide users to our troubleshooting page or suggest contacting our technical support team.
-6. Always maintain user privacy and do not share personal information.
-7. If you're unsure about any information, it's okay to say you don't know and offer to connect the user with a healthcare professional.
-
-Your goal is to provide accurate information, assist with common inquiries, and ensure a positive experience for all PharmaAI users.`;
+const systemPrompt = `You are an AI-powered customer support assistant for PharmaAI, a platform that provides AI-powered disease information, symptoms, and treatments to patients. Your goal is to provide accurate information, assist with common inquiries, and ensure a positive experience for all PharmaAI users. Limit each response to one line. Remember what was said before to maintain the context of the conversation. End the conversation by informing the user that their responses have been recorded and forwarded to a doctor.`;
 
 export async function POST(req) {
     const data = await req.json();
@@ -37,23 +27,34 @@ export async function POST(req) {
         const result = await response.json();
         return result.contents[0].parts[0].text;
     };
-    userAA = null
-    try {
-        const systemPrompt = "You are a doctor, and you have to give advice to the user based on the following message.";
-        const userQuery = data.query;
 
-        const prompt = `${systemPrompt} User query: ${userQuery}`;
-        const geminiResponse = await queryGemini(prompt);
-        if (!userQuery){
-            throw new Error("there is no such query", userQuery)
+    try {
+        const userQuery = data.query;
+        if (!userQuery) {
+            throw new Error("No query provided");
         }
-        return new Response(JSON.stringify({ response: geminiResponse }), {
+
+        const conversationHistory = data.history || []; 
+        conversationHistory.push(`User: ${userQuery}`);
+        const prompt = `${systemPrompt}\n\n${conversationHistory.join('\n')}`;
+
+        let aiResponse = await queryGemini(prompt);
+
+        aiResponse = aiResponse.split('\n')[0].trim();
+        conversationHistory.push(`AI: ${aiResponse}`);
+        // Limiting the coversation 
+        const shouldEndConversation = conversationHistory.length >= 6;
+        if (shouldEndConversation) {
+            aiResponse += `\nGoodbye! The conversation has been recorded and forwarded to a doctor. You can email the doctor about your response at doc@gmail.com.`;
+        }
+
+        return new Response(JSON.stringify({ response: aiResponse, history: conversationHistory }), {
             headers: { 'Content-Type': 'application/json' },
         });
 
     } catch (error) {
         console.error('Error occurred:', error.message);
-        return new Response(JSON.stringify({ response: 'Sorry, something went wrong. Please try again later. hehe' }), {
+        return new Response(JSON.stringify({ response: 'Sorry, something went wrong. Please try again later.' }), {
             headers: { 'Content-Type': 'application/json' },
             status: 500,
         });
