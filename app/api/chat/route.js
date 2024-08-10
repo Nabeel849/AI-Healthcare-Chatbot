@@ -15,54 +15,13 @@ async function queryGemini(text) {
             {
               parts: [{ text: text }],
             },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [{ text: text }]
-                    }
-                ]
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch data from Gemini API');
-        }
-
-        const result = await response.json();
-        return result.contents[0].parts[0].text;
-    };
-
-    try {
-        const userQuery = data.query;
-        if (!userQuery) {
-            throw new Error("No query provided");
-        }
-
-        const conversationHistory = data.history || []; 
-        conversationHistory.push(`User: ${userQuery}`);
-        const prompt = `${systemPrompt}\n\n${conversationHistory.join('\n')}`;
-
-        let aiResponse = await queryGemini(prompt);
-
-        aiResponse = aiResponse.split('\n')[0].trim();
-        conversationHistory.push(`AI: ${aiResponse}`);
-        // Limiting the coversation 
-        const shouldEndConversation = conversationHistory.length >= 6;
-        if (shouldEndConversation) {
-            aiResponse += `\nGoodbye! The conversation has been recorded and forwarded to a doctor. You can email the doctor about your response at doc@gmail.com.`;
-        }
-
-        return new Response(JSON.stringify({ response: aiResponse, history: conversationHistory }), {
-            headers: { 'Content-Type': 'application/json' },
-        });
-
-    } catch (error) {
-        console.error('Error occurred:', error.message);
-        return new Response(JSON.stringify({ response: 'Sorry, something went wrong. Please try again later.' }), {
-            headers: { 'Content-Type': 'application/json' },
-            status: 500,
-        });
->>>>>>> 10727727d3aa237482e1280cd5dca9de5d0d136e
+          ],
+        }),
+      }
+    );
+  
+    if (!response.ok) {
+      throw new Error("Failed to fetch data from Gemini API");
     }
   
     const result = await response.json();
