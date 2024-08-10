@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-  "dev": "concurrently \"next dev\" \"cd app/api/chat && python app.py\"",
+  "dev": "node server.js",
   "build": "next build",
-  "start": "concurrently \"next start\" \"cd app/api/chat && python app.py\"",
+  "start": "next start",
   "lint": "next lint"
   },
 
