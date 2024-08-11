@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Stack, TextField, Button, Typography, Paper, AppBar, Toolbar, IconButton } from '@mui/material';
+import { Box, Stack, TextField, Button, Typography, Paper, AppBar, Toolbar, IconButton, useMediaQuery } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import { ToastContainer, toast } from 'react-toastify';
@@ -19,6 +19,10 @@ export default function Home() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState('');
   const [feedbackComments, setFeedbackComments] = useState('');
+
+  // Media query for responsiveness
+  const isSmallScreen = useMediaQuery('(max-width:600px)');
+
   const sendMessage = async () => {
     if (message.trim() === '') return;
     setMessages((messages) => [
@@ -60,10 +64,8 @@ export default function Home() {
             { role: 'assistant', content: 'Sorry, something went wrong. Please try again later.' }
         ]);
     }
-};
+  };
 
-
-  
   const restartChat = () => {
     setMessages([
       {
@@ -90,12 +92,13 @@ export default function Home() {
       justifyContent="center"
       alignItems="center"
       bgcolor="#f5f5f5"
+      p={isSmallScreen ? 2 : 0}
     >
       {chatOpen && (
         <Stack
           direction="column"
-          width="600px"
-          height="700px"
+          width={isSmallScreen ? '100%' : '600px'}
+          height={isSmallScreen ? '80vh' : '700px'}
           component={Paper}
           elevation={3}
           borderRadius={4}
@@ -213,8 +216,8 @@ export default function Home() {
 
       <Box
         position="fixed"
-        bottom={16}
-        right={16}
+        bottom={isSmallScreen ? 8 : 16}
+        right={isSmallScreen ? 8 : 16}
         bgcolor="#6a1b9a"
         borderRadius={4}
         p={2}
@@ -228,13 +231,13 @@ export default function Home() {
       {feedbackOpen && (
         <Box
           position="fixed"
-          bottom={16}
-          right={16}
+          bottom={isSmallScreen ? 8 : 16}
+          right={isSmallScreen ? 8 : 16}
           bgcolor="#ffffff"
           borderRadius={4}
           p={2}
           boxShadow={3}
-          width="300px"
+          width={isSmallScreen ? '90%' : '300px'}
         >
           <Typography variant="h6" mb={2}>Feedback</Typography>
           <Stack direction="row" spacing={2} mb={2}>
