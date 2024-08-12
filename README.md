@@ -1,6 +1,6 @@
 ## Vercel link 
 
-Here is the Demo link :- https://ai-healthcare-chatbot-e79bma0aq-abdullahs-projects-040f512f.vercel.app/
+Here is the Demo link :- https://pharma-ai-nine.vercel.app/
 
 ## Getting Started
 
